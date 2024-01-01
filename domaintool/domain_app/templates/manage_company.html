@@ -1,0 +1,38 @@
+{% extends 'base_dash.html' %}
+
+{%load static%}
+
+
+{% block content %}
+<div class="col-lg-12 mx-1">
+<div class="jumbotron">
+  <h3 class="display-6">Add Company</h3>
+  <hr class="my-4">
+  <form action="" method="post" autocomplete="off">
+    {% csrf_token %}
+    {% load crispy_forms_tags %}
+    <div class="row">
+        <div class="col-md-8">
+        {{ form.name|as_crispy_field }}
+        </div>
+        <div class="col-md-4">
+            {{ form.address|as_crispy_field }}
+        </div>
+        <div class="col-md-8">
+            {{ form.location|as_crispy_field }}
+        </div>
+    </div>
+        <div class="row">
+            <div class="col-md-8">
+                <button type="submit" class="btn btn-success btn-block btn-lg"><i class="fa fa-database" aria-hidden="true"></i> Submit</button>
+            </div>
+            <div class="col-md-4">
+                <a href="{% url 'lists' %}" class="btn btn-secondary btn-block btn-lg">
+                <i class="fas fa-arrow-left"></i> Back to list
+                </a>
+            </div>
+        </div>
+   </form>
+</div>
+</div>
+{% endblock content%}

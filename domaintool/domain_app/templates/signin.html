@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+
+{% block content %}
+
+<div class="formContainer text-center">
+  {% load static %}
+    
+    <form class="signupForm" action="" method='POST'>
+      <img src="{% static "images/gbhl-logo.jpg" %}" alt="Logo" height="100" class="mb-3 rounded-circle">
+  <h4>Login</h4>
+
+  {% if msg != "" %}
+  <div class="alert alert-danger" role="alert">
+    {{msg}}
+  </div>
+  {% endif %} 
+
+        {% csrf_token %}
+
+        {% if request.GET.next %}
+
+        <input type="hidden" name="next" value={{request.GET.next}}>
+        
+        {% endif %}
+        
+        <div class="mb-3">
+            <label for="exampleFormControlInput1" class="form-label">Email</label>
+            <input type="text" class="form-control" name="email" placeholder="Enter Email">
+          </div>
+
+          <div class="mb-3">
+            <label for="exampleFormControlInput1" class="form-label">Password</label>
+            <input type="password" class="form-control" name="password" placeholder="Enter Password">
+          </div>
+
+
+          <button class = 'btn btn-primary'>Login</button>
+    </form>
+</div>
+    
+{% endblock content %}
+    
+
+     

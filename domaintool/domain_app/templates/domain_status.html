@@ -1,0 +1,133 @@
+{% extends 'base_dash.html' %}
+
+{% load static %}
+
+{% block content %}
+<style>
+    .updated-column {
+        white-space: nowrap;
+    }
+    .date{
+        white-space: nowrap;
+    }
+</style>
+<div class="col-lg-12 mx-1">
+    <div class="jumbotron">
+        <h4 class="display-6">Domain Status</h4>
+        <hr class="my-4">
+        <table class="display" id="domainTable">
+            <thead class="border-bottom font-weight-bold">
+                <tr>
+                    <td> Domain<br> Name </td>
+                    <td> Date of <br> Registration</td>
+                    <td> Date of <br> Expiry</td>
+                    <td> Company <br><br></td>
+                    <td > Registrar <br> Name</td>
+                </tr>
+            </thead>
+            <tbody>
+                {% for domain in domains %}
+                <tr>
+                    <td> {{ domain.name }} </td>
+                    <td class="date"> {{ domain.registration_date }} </td>
+                    <td class="date"> {{ domain.expiry_date }} </td>
+                    <td> {{ domain.company }} </td>
+                    <td class="updated-column"> Loading... </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock content %}
+
+{% block js %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.css" />
+<script type="text/javascript" src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script>
+    $(document).ready(function () {
+        var table = $('#domainTable').DataTable({
+        lengthChange: false,
+        pageLength: 10,
+        initComplete: function () {
+            // Delay the execution by 100 milliseconds
+            setTimeout(function () {
+                fetchAndUpdateUpdatedColumn(table);
+            }, 100);
+            this.api().columns().every(function (index) {
+                // Check if it's the 1st or 4th column (index 0 or 3)
+                if (index === 0 || index === 3) {
+                    let column = this;
+                    let title = column.header().textContent;
+
+                    // Create input element
+                    let input = document.createElement('input');
+                    input.placeholder = title;
+
+                    // Append input to the header row
+                    $(column.header()).append(input);
+
+                    // Event listener for user input
+                    input.addEventListener('keyup', () => {
+                        if (column.search() !== input.value) {
+                            column.search(input.value).draw();
+                        }
+                    });
+                }
+            });
+        }
+    });
+    
+    async function fetchAndUpdateUpdatedColumn(table) {
+        // Check if the DataTable is initialized
+        if (!table) {
+            console.error('DataTable is not initialized. Aborting fetchAndUpdateUpdatedColumn.');
+            return;
+        }
+
+        // Check if DataTable has rows
+        if (!table.rows) {
+            console.error('DataTable does not have rows. Aborting fetchAndUpdateUpdatedColumn.');
+            return;
+        }
+
+        // Iterate through each row and fetch data
+        table.rows().every(async function (index) {
+            const row = this.node();
+            const domainName = $(row).find('td:eq(0)').text().trim();
+
+            try {
+                // Display a loading indicator while fetching data
+                const updatedCell = $(row).find('.updated-column');
+                updatedCell.html('<i class="fas fa-spinner fa-spin"></i>');
+
+                // Make a fetch request to the Django backend API endpoint
+                const response = await fetch(`/api/domain-update/${domainName}/`);
+                const data = await response.json();
+
+                // Log the entire API response to the console
+                console.log('API Response:', data);
+
+                // Process the response...
+                const registrarName = data.registrar_name || 'N/A';
+
+                // Update the "Updated" column cell with the registrar's name
+                updatedCell.text(registrarName);
+            } catch (error) {
+                // Handle errors from the fetch request
+                console.error('Error fetching data for domain:', domainName, error);
+
+                // Display an error message in the "Updated" column
+                const updatedCell = $(row).find('.updated-column');
+                updatedCell.text('Error');
+            }
+        });
+
+        // Redraw the DataTable
+        table.draw();
+    }
+});
+</script>
+
+{% endblock %}

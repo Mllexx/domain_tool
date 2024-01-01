@@ -1,0 +1,167 @@
+{% extends 'base_dash.html' %}
+{% load static %}
+
+{% block content %}
+ <!--preloader-->
+ <div class="preloader-container" style="display: none">
+    <div class="spinner"></div>
+</div>
+<style>
+    .preloader-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8); /* semi-transparent white background */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    .spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
+        border-top: 4px solid #3498db;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .ajs-success {
+        background-color: #4CAF50; 
+        color: #ffffff;
+    }
+</style>
+<div class="col-lg-10 mx-5">
+<div class="jumbotron">
+    <h3 class="display-6">Add Domain</h3>
+    <hr class="my-4">
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <form id="domainForm" action="" method="post" autocomplete="off">
+        {% csrf_token %}
+        {% load crispy_forms_tags %}
+        <div class="row">
+            <div class="col-md-8">
+                {{ form.name|as_crispy_field }}
+            </div>
+            <div class="col-md-4">
+                {{ form.company|as_crispy_field }}
+            </div>
+            <div class="col-md-4">
+                {{ form.registration_date|as_crispy_field }}
+            </div>
+            <div class="col-md-4">
+                {{ form.expiry_date|as_crispy_field }}
+            </div>
+            <div class="col-md-4" style="margin-top: 32px;">
+                <button type="button" class="btn btn-primary btn-block" id="lookupButton">
+                    <i class="fas fa-search"></i> Lookup
+                </button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-8">
+                <button type="submit" class="btn btn-success btn-block btn-lg"><i class="fa fa-database"
+                        aria-hidden="true"></i> Submit</button>
+            </div>
+            <div class="col-md-4">
+                <a href="{% url 'domain' %}" class="btn btn-secondary btn-block btn-lg">
+                    <i class="fas fa-arrow-left"></i> Back to Domain List
+                </a>
+            </div>
+        </div>
+    </form>
+</div>
+</div>
+
+{% endblock content %}
+
+{% block js %}
+<script src="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/alertify.min.js"></script>
+<script>
+
+    document.getElementById('lookupButton').addEventListener('click', function (event) {
+        showPreloader();
+
+        // Simulate form submission delay with setTimeout
+        setTimeout(function () {
+            hidePreloader();
+            // Add logic to handle the form submission, e.g., send data to the server
+            // You can use AJAX, fetch, or other methods for actual form submission
+            console.log('Form submitted!');
+        }, 3000); // Adjust the timeout value as needed
+    });
+
+    function showPreloader() {
+        var preloader = document.querySelector('.preloader-container');
+        preloader.style.display = 'flex';
+    }
+
+    function hidePreloader() {
+        var preloader = document.querySelector('.preloader-container');
+        preloader.style.display = 'none';
+
+        // Stop the spinner by removing the 'spin' animation class
+        var spinner = document.querySelector('.spinner');
+        spinner.classList.remove('spin');
+    }
+
+    // The rest of your scripts here
+    // Set the position for Alertify.js notifications
+    alertify.set('notifier', 'position', 'top-right');
+    $(document).ready(function () {
+        // Attach a click event listener to the Lookup button
+        $('#lookupButton').click(function () {
+            // Make an AJAX request to the Django view
+            $.ajax({
+                url: '{% url "lookup" %}',
+                method: 'POST',
+                data: $('#domainForm').serialize(),
+                success: function (data) {
+                    console.log('API Response:', data);
+        
+                    if (data.status === 'success') {
+                        const registrationDate = data.registration_date;
+                        const expirationDate = data.expiry_date;
+        
+                        console.log('Registration Date:', registrationDate);
+                        console.log('Expiration Date:', expirationDate);
+        
+                        if (registrationDate !== '' && expirationDate !== '') {
+                            $('#id_registration_date').val(registrationDate);
+                            $('#id_expiry_date').val(expirationDate);
+        
+                            // Use Alertify.js for success message
+                            alertify.success('Domain Found!');
+                        } else {
+                            console.error('Error: Date properties are empty in the API response.');
+                            // Use Alertify.js for error message
+                            alertify.error('Error: Date properties are empty.');
+                        }
+                    } else {
+                        console.error('Error:', data.message);
+                        // Use Alertify.js for error message
+                        alertify.error('Error: ' + data.message);
+                    }
+                },
+                error: function (error) {
+                    console.error('Error:', error.responseText);
+                    // Use Alertify.js for error message
+                    alertify.error('Error: ' + error.responseText);
+                },
+                complete: function () {
+                    // This function will run regardless of success or error
+                    hidePreloader();
+                }
+            });
+        });
+    });
+</script>
+{% endblock%}

@@ -1,0 +1,75 @@
+{% extends 'base_dash.html' %}
+
+{% block content %}
+<div class="col-lg-10 mx-5">
+    <div class="jumbotron">
+        <h3 class="display-6">Add New User</h3>
+        <hr class="my-4">
+
+       
+
+        <form method="post" action="" autocomplete="off">
+            {% csrf_token %}
+            {% load crispy_forms_tags %}
+            
+            <div class="row">
+                <div class="col-md-8">
+                    {{ form.username|as_crispy_field }}
+                </div>
+                <div class="col-md-4">
+                    {{ form.password1|as_crispy_field }}
+                </div>
+                <div class="col-md-8">
+                    {{ form.email|as_crispy_field }}
+                </div>
+            </div>
+
+            <!-- Render is_admin field with checkboxes -->
+            <style>
+                /* Adjust the selector based on the class or HTML structure applied by Crispy Forms */
+                .normal-font-weight label,
+                .normal-font-weight input {
+                    font-weight: normal !important;
+                }
+                .bold-font-weight label,
+                .bold-font-weight input {
+                    font-weight: bold !important;
+                }
+            </style>            
+            <label class="col-form-label">User Roles</label>
+            <div class="form-group">
+                <div class="col-md-2 normal-font-weight" style="display: inline-block; margin-right: 10px; margin-bottom: 10px;">
+                    {{ form.role.0 }}
+                </div>
+                <div class="col-md-2 normal-font-weight" style="display: inline-block; margin-right: 10px; margin-bottom: 10px;">
+                    {{ form.role.1 }}
+                </div>
+                <div class="col-md-2 bold-font-weight" style="display: inline-block; margin-right: 10px; margin-bottom: 10px;">
+                    {{ form.status|as_crispy_field }}
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <button type="submit" class="btn btn-success btn-block btn-lg"><i class="fa fa-database"
+                            aria-hidden="true"></i> Submit</button>
+                </div>
+                <div class="col-md-4">
+                    <a href="{% url 'users' %}" class="btn btn-secondary btn-block btn-lg">
+                        <i class="fas fa-arrow-left"></i> Back to Users List
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    $('.role-radio').change(function () {
+        if ($(this).is(':checked')) {
+            // Uncheck other radio buttons with the same class
+            $('.role-radio').not(this).prop('checked', false);
+        }
+    });
+</script>
+{% endblock content %}
