@@ -9,7 +9,8 @@ from django.db.models import Q
 from django.views import View
 import requests, json, logging
 from django.contrib import messages
-from datetime import date
+from django.utils import timezone
+from datetime import date,datetime, timedelta
 from .models import User
 from django.contrib.auth.decorators import login_required
 from django.views.generic import TemplateView
@@ -31,6 +32,13 @@ def dashboard(request):
     }
 
     return render(request, 'dashboard.html', context)
+
+def base_domain_tbl(request):
+    domains = Domain.objects.all()
+    print(domains) 
+    context = {'domains': domains}
+    return render(request, 'base_dash.html', context)
+
 
 def signin(request):
     msg = ""
@@ -65,89 +73,87 @@ def signin(request):
     context = {"msg": msg}
     return render(request, "signin.html", context)
 
-# def signup(request):
-    
-#     form = UserCreationForm()
-#     if request.method == 'POST':
-#         form = UserCreationForm(request.POST)
-#         if form.is_valid():
-#             form.save()
-#             # login starts here
-#             username = request.POST['username'] 
-#             password = request.POST['password1']
-#             user = authenticate(request, username=username, password=password)
-#             if user is not None:
-#                 login(request, user)
-#                 return redirect("index")
-#     context = {"form":form}
-#     return render(request, "signup.html", context)
-
 def signout(request):
     logout(request)
     return redirect("index")
 
 def list_users(request):
     users = User.objects.all()
-    return render(request, 'users_list.html', {'users': users})
+    
+    threshold_date = timezone.now() + timedelta(days=30)
+
+    # Query the database for domains with expiry date less than or equal to 30 days
+    expiring_domains = Domain.objects.filter(expiry_date__lte=threshold_date)
+
+    # Count the number of expiring domains
+    domain_count = expiring_domains.count()
+    
+    now = timezone.now()
+    for domain in expiring_domains:
+        domain.remaining_days = (domain.expiry_date - now).days
+
+    # Pass the data to the template
+    context = {
+        'domain_count': domain_count,
+        'expiring_domains': expiring_domains,
+        'users': users,
+        'now': now
+    }
+    return render(request, 'users_list.html', context)
 
 @login_required(login_url="signin")
-def add_user(request, user_id=None):
-    # If user_id is provided, fetch the user instance for update; otherwise, create a new instance
-    user = get_object_or_404(User, pk=user_id) if user_id else None
-
-    if request.method == 'POST':
-        form = UserForm(request.POST, instance=user)
-        if form.is_valid():
-            user = form.save(commit=False)
-            # Check if the username and email already exist for other users
-            existing_username = User.objects.exclude(pk=user.pk).filter(username=user.username).exists()
-            existing_email = User.objects.exclude(pk=user.pk).filter(email=user.email).exists()
-
-            # Check if there are conflicts with the username or email
-            if existing_username:
-                form.add_error('username', 'User with this Username already available.')
-            if existing_email:
-                form.add_error('email', 'User with this Email already available.')
-
-            if not existing_username and not existing_email:
-                # Get the role from the form's cleaned_data
-                role = form.cleaned_data['role']
-                status = form.cleaned_data['status']
-                
-                # Set the role-specific attributes based on the selected role
-                if role == 'admin':
-                    user.is_admin = True
-                elif role == 'user':
-                    user.is_user = True
-
-                # Set the is_active attribute based on the status field
-                user.is_active = status
-                
-                user.save()
-
-                # Determine if the user was added or updated and display the appropriate message
-                if user_id:
-                    messages.success(request, 'User Updated successfully!')
-                else:
-                    messages.success(request, 'User Added successfully!')
-
-                # Redirect to the user management section for administrators
-                return redirect('users')  # Change 'user_management' to the URL for managing users
+def add_user(request, id=0): 
+    if request.method == "GET":
+        if id == 0:
+            form = UserForm()
+        else:
+            user = get_object_or_404(User, pk=id)
+            form = UserForm(instance=user)
+        return render(request, "add_user.html", {'form': form})
     else:
-        # If it's an update, populate the form with the existing user data
-        form = UserForm(instance=user)
+        if id == 0:
+            form = UserForm(request.POST)
+        else:
+            user = get_object_or_404(User, pk=id)
+            form = UserForm(request.POST, instance=user)
+        
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'User Added!')
+            return render(request, "users_list.html", {'user': User.objects.all()})
+        else:
+            # Handle the case when the form is not valid
+            return render(request, "add_user.html", {'form': form})
 
-    return render(request, 'add_user.html', {'form': form, 'user': user})
 
 @login_required(login_url="signin")
 def company_list(request, id=0):
+              
+    threshold_date = timezone.now() + timedelta(days=30)
+
+    # Query the database for domains with expiry date less than or equal to 30 days
+    expiring_domains = Domain.objects.filter(expiry_date__lte=threshold_date)
+
+    # Count the number of expiring domains
+    domain_count = expiring_domains.count()
+    
+    now = timezone.now()
+    for domain in expiring_domains:
+        domain.remaining_days = (domain.expiry_date - now).days
+
+    # Pass the data to the template
+    context = {
+        'domain_count': domain_count,
+        'expiring_domains': expiring_domains,
+        'now': now,
+    } 
     if request.method == "GET":
         if id==0:
             form = CompanyForm()
         else:
             company = Company.objects.get(pk=id)
             form = CompanyForm(instance=company)
-        return render(request, "manage_company.html",{'form':form})
+        return render(request, "manage_company.html",{'form':form,'domain_count': domain_count,'expiring_domains': expiring_domains, 'now': now, })
     else:
         if id == 0:
             form = CompanyForm(request.POST)
@@ -158,11 +164,30 @@ def company_list(request, id=0):
             form.save()
             messages.success(request, 'Company Added!')
             context = {'companies': Company.objects.all()}
-        return render(request, "company_list.html", context)
+        return render(request, "company_list.html", {'domain_count': domain_count,'expiring_domains': expiring_domains, 'now': now, 'companies': Company.objects.all()})
     
 @login_required(login_url="signin")
 def companies(request):
-    context = {'companies': Company.objects.all()} 
+    threshold_date = timezone.now() + timedelta(days=30)
+
+    # Query the database for domains with expiry date less than or equal to 30 days
+    expiring_domains = Domain.objects.filter(expiry_date__lte=threshold_date)
+
+    # Count the number of expiring domains
+    domain_count = expiring_domains.count()
+    
+    now = timezone.now()
+    for domain in expiring_domains:
+        domain.remaining_days = (domain.expiry_date - now).days
+
+    # Pass the data to the template
+    context = {
+        'domain_count': domain_count,
+        'expiring_domains': expiring_domains,
+        'now': now,
+        'companies': Company.objects.all()
+    }
+     
     return render(request,"company_list.html", context)
 
 def company_delete(request, company_id):
@@ -179,19 +204,79 @@ def company_delete(request, company_id):
 
 @login_required(login_url="signin")
 def domain(request):
-    context = {'domains': Domain.objects.all()}
+    threshold_date = timezone.now() + timedelta(days=30)
+
+    # Query the database for domains with expiry date less than or equal to 30 days
+    expiring_domains = Domain.objects.filter(expiry_date__lte=threshold_date)
+
+    # Count the number of expiring domains
+    domain_count = expiring_domains.count()
+    
+    now = timezone.now()
+    for domain in expiring_domains:
+        domain.remaining_days = (domain.expiry_date - now).days
+
+    # Pass the data to the template
+    context = {
+        'domain_count': domain_count,
+        'expiring_domains': expiring_domains,
+        'now': now,
+        'domains': Domain.objects.all()
+    }
+    
     return render(request, "manage_domain.html", context)
 
 @login_required(login_url="signin")
 def domain_status(request):
-    context = {'domains': Domain.objects.all()}
+    threshold_date = timezone.now() + timedelta(days=30)
+
+    # Query the database for domains with expiry date less than or equal to 30 days
+    expiring_domains = Domain.objects.filter(expiry_date__lte=threshold_date)
+
+    # Count the number of expiring domains
+    domain_count = expiring_domains.count()
+    
+    now = timezone.now()
+    for domain in expiring_domains:
+        domain.remaining_days = (domain.expiry_date - now).days
+
+    # Pass the data to the template
+    context = {
+        'domain_count': domain_count,
+        'expiring_domains': expiring_domains,
+        'now': now,
+        'domains': Domain.objects.all()
+    }
+    
     return render(request, "domain_status.html", context)
 
 @login_required(login_url="signin")
 def domain_list(request):
     if request.method == "GET":
+        #initialize form
         form = DomainForm()
-        return render(request, "add_domain.html",{'form':form})
+        
+        threshold_date = timezone.now() + timedelta(days=30)
+
+        # Query the database for domains with expiry date less than or equal to 30 days
+        expiring_domains = Domain.objects.filter(expiry_date__lte=threshold_date)
+
+        # Count the number of expiring domains
+        domain_count = expiring_domains.count()
+        
+        now = timezone.now()
+        for domain in expiring_domains:
+            domain.remaining_days = (domain.expiry_date - now).days
+
+        # Pass the data to the template
+        context = {
+            'domain_count': domain_count,
+            'expiring_domains': expiring_domains,
+            'now': now,
+            'form':form
+        } 
+        
+        return render(request, "add_domain.html",context)
     else:
         form = DomainForm(request.POST)
         if form.is_valid():

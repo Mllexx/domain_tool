@@ -34,6 +34,7 @@
   <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
   <!-- Alertify -->
   <script src="//cdn.jsdelivr.net/npm/alertifyjs@1.13.1/build/alertify.min.js"></script>
+  <!--Data Tables-->
   
 </head>
 <!--
@@ -62,34 +63,12 @@ to get the desired effect
 
     <!-- Right navbar links -->
     <ul class="navbar-nav ml-auto">
-      <!-- Messages Dropdown Menu -->
-      <li class="nav-item dropdown">
-        <a class="nav-link" data-toggle="dropdown" href="#">
-          <i class="far fa-bell" style="color:white; font-size:20px;"></i>
-          <span class="badge badge-warning navbar-badge">15</span>
-        </a>
-        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-          <span class="dropdown-item dropdown-header">15 Notifications</span>
-          <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item">
-            <i class="fas fa-envelope mr-2"></i> 4 new messages
-            <span class="float-right text-muted text-sm">3 mins</span>
-          </a>
-          <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item">
-            <i class="fas fa-users mr-2"></i> 8 friend requests
-            <span class="float-right text-muted text-sm">12 hours</span>
-          </a>
-          <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item">
-            <i class="fas fa-file mr-2"></i> 3 new reports
-            <span class="float-right text-muted text-sm">2 days</span>
-          </a>
-          <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item dropdown-footer">See All Notifications</a>
-        </div>
-      </li>
-      <!-- Notifications Dropdown Menu -->
+      <!-- Notification Dropdown Menu -->
+     {% block notification %}
+
+     {% endblock %}
+      
+      <!-- Logout Dropdown Menu -->
       <li class="nav-item dropdown">
         <a class="nav-link" data-toggle="dropdown" href="#"  style="color:white">
           <i class="far fa-user"></i>&nbsp;
@@ -236,7 +215,9 @@ to get the desired effect
         </div>
           
           <!-- /.col-md-6 -->
-          <div class="col-lg-6">
+          
+            {% comment %} jdjf  {% endcomment %}
+        </div>
             
             <!-- /.card -->
 
@@ -280,6 +261,9 @@ to get the desired effect
 <script src="{%static 'plugins/chart.js/Chart.min.js' %}"></script>
 <script src="{%static 'dist/js/demo.js' %}"></script>
 <script src="{%static 'dist/js/pages/dashboard3.js' %}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
+
 <script>
   // Simulate content loading (you should replace this with your actual content loading logic).
 window.addEventListener('load', function () {

@@ -2,6 +2,31 @@
 
 {% load static %}
 
+{% block notification %}
+<li class="nav-item dropdown">
+    <a class="nav-link" data-toggle="dropdown" href="#">
+        <i class="far fa-bell" style="color:white; font-size:20px;"></i>
+        <span class="badge badge-warning navbar-badge" id="domainCountBadge">{{ domain_count }}</span>
+    </a>
+    <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+        <span class="dropdown-item dropdown-header">Domains due expiry</span>
+        <div class="dropdown-divider"></div>
+        
+        <!-- Dynamically generate dropdown items for each domain with days to expiry -->
+        <div id="domainDropdownItems">
+            {% for domain in expiring_domains %}
+            <a href="#" class="dropdown-item">
+                <i class="far fa-circle mr-2"></i>{{ domain.name }}
+                <span class="float-right text-muted text-sm">{{ domain.remaining_days }} days</span>
+            </a>
+            {% endfor %}
+        </div>
+        
+        <div class="dropdown-divider"></div>
+    </div>
+</li>
+{% endblock %}
+
 {% block content %}
 <style>
     .updated-column {
@@ -15,7 +40,7 @@
     <div class="jumbotron">
         <h4 class="display-6">Domain Status</h4>
         <hr class="my-4">
-        <table class="display" id="domainTable">
+        <table class="display" id="dmnTable">
             <thead class="border-bottom font-weight-bold">
                 <tr>
                     <td> Domain<br> Name </td>
@@ -47,7 +72,7 @@
 <script type="text/javascript" src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
 <script>
     $(document).ready(function () {
-        var table = $('#domainTable').DataTable({
+        var table = $('#dmnTable').DataTable({
         lengthChange: false,
         pageLength: 10,
         initComplete: function () {
